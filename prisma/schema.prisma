@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model GuildConfig {
+  guild_id                  String   @id @unique
+  enabled                   Boolean  @default(false)
+  language                  String   @default("en") // 'en' or 'tr'
+
+  panel_channel_id          String?
+  log_channel_id            String?
+  support_role_ids          String[]
+  admin_role_ids            String[]
+  cooldown_seconds          Int      @default(60)
+  naming_scheme             String   @default("ticket-{seq}")
+  auto_close_hours          Int?
+  ticket_types              Json
+  created_at                DateTime @default(now())
+  updated_at                DateTime @updatedAt
+  blacklisted_user_ids      String[] @default([])
+  dm_notifications_enabled  Boolean  @default(true)
+  max_open_tickets_per_user Int      @default(1)
+  ticket_category_ids       Json     @default("[]")
+  ticket_seq                Int      @default(0)
+  transcript_format         String   @default("md")
+  log_channel_mode          String   @default("file") @map("log_mode")
+  panel_description         String?
+  panel_footer              String?
+  panel_title               String?
+  panel_timestamp           Boolean  @default(true)
+  ticket_welcome_content    String?
+  ticket_welcome_title      String?
+  ticket_welcome_mode       String   @default("embed")
+  panel_mode                String   @default("embed")
+  audit_log_enabled         Boolean  @default(true)
+  tickets                   Ticket[]
+
+  @@map("guild_configs")
+}
+
+model Ticket {
+  ticket_id             String      @id @default(uuid()) @map("uuid")
+  guild_id              String
+  type_key              String
+  opener_id             String
+  claimed_by            String?
+  channel_id            String
+  close_reason          String?
+  close_by              String?
+  transcript_message_id String?     @map("transcript_msg_id")
+  transcript_uri        String?     @map("transcript_url")
+  transcript_sha256     String?
+  transcript_size_bytes Int?
+  last_activity_at      DateTime    @default(now())
+  created_at            DateTime    @default(now())
+  closed_at             DateTime?
+  is_locked             Boolean     @default(false)
+  priority              String      @default("low")
+  status                String      @default("open")
+  guild                 GuildConfig @relation(fields: [guild_id], references: [guild_id])
+
+  @@index([guild_id])
+  @@index([opener_id])
+  @@index([status])
+  @@map("tickets")
+}
